@@ -137,18 +137,6 @@ if ((-not $skipDownload) -and (-not $skipInstallation)) {
     }
 }
 
-# 驗證檔案是否存在
-if (-not (Test-Path $downloadPath)) {
-    Write-Error "找不到下載的檔案: $downloadPath"
-    Read-Host "按Enter鍵結束"
-    exit 1
-}
-
-# 取得檔案大小
-$fileSize = (Get-Item $downloadPath).Length
-$fileSizeMB = [math]::Round($fileSize / 1MB, 2)
-Write-Host "檔案大小: $fileSizeMB MB" -ForegroundColor Cyan
-
 # 安裝Remote Tools
 if (-not $skipInstallation) {
     Write-Host "`n正在安裝Visual Studio Remote Tools..." -ForegroundColor Cyan
