@@ -13,8 +13,6 @@
     .\Install-VSRemoteDebugger.ps1
 #>
 
-# 不需要參數
-
 # 檢查是否以管理員身份執行
 function Test-Administrator {
     $currentUser = [Security.Principal.WindowsIdentity]::GetCurrent()
@@ -79,6 +77,38 @@ switch ($cpuArch.ToUpper()) {
     }
 }
 
+# 檢查Remote Debugger是否已安裝
+Write-Host "`n正在檢查Visual Studio Remote Tools是否已安裝..." -ForegroundColor Cyan
+
+$isInstalled = $false
+$remoteDebuggerPaths = @(
+    "C:\Program Files\Microsoft Visual Studio 17.0\Common7\IDE\Remote Debugger",
+    "C:\Program Files (x86)\Microsoft Visual Studio 17.0\Common7\IDE\Remote Debugger",
+    "C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\IDE\Remote Debugger",
+    "C:\Program Files\Microsoft Visual Studio\2022\Professional\Common7\IDE\Remote Debugger",
+    "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\IDE\Remote Debugger"
+)
+
+$installPath = ""
+foreach ($path in $remoteDebuggerPaths) {
+    if (Test-Path $path) {
+        $exePath = Join-Path $path "x64\msvsmon.exe"
+        if (Test-Path $exePath) {
+            Write-Host "找到已安裝的Remote Debugger: $path" -ForegroundColor Green
+            $isInstalled = $true
+            $installPath = $path
+            break
+        }
+    }
+}
+
+if ($isInstalled) {
+    Write-Host "Visual Studio Remote Tools 已經安裝，跳過安裝步驟..." -ForegroundColor Yellow
+    $skipInstallation = $true
+} else {
+    Write-Host "未找到已安裝的Remote Tools，將開始安裝..." -ForegroundColor Yellow
+}
+
 # 設定下載路徑
 $downloadPath = Join-Path $env:TEMP $fileName
 Write-Host "下載路徑: $downloadPath" -ForegroundColor Cyan
@@ -120,29 +150,33 @@ $fileSizeMB = [math]::Round($fileSize / 1MB, 2)
 Write-Host "檔案大小: $fileSizeMB MB" -ForegroundColor Cyan
 
 # 安裝Remote Tools
-Write-Host "`n正在安裝Visual Studio Remote Tools..." -ForegroundColor Cyan
-Write-Host "這可能需要幾分鐘時間，請耐心等候..." -ForegroundColor Yellow
+if (-not $skipInstallation) {
+    Write-Host "`n正在安裝Visual Studio Remote Tools..." -ForegroundColor Cyan
+    Write-Host "這可能需要幾分鐘時間，請耐心等候..." -ForegroundColor Yellow
 
-try {
-    # 靜默安裝
-    $installArgs = "/install /quiet /norestart"
-    $process = Start-Process -FilePath $downloadPath -ArgumentList $installArgs -Wait -PassThru
-    
-    if ($process.ExitCode -eq 0) {
-        Write-Host "`n安裝成功完成！" -ForegroundColor Green
-        Write-Host "Visual Studio Remote Tools 已成功安裝" -ForegroundColor Green
-    } elseif ($process.ExitCode -eq 3010) {
-        Write-Host "`n安裝成功完成！" -ForegroundColor Green
-        Write-Host "需要重新啟動電腦才能完全啟用功能" -ForegroundColor Yellow
-    } else {
-        Write-Warning "安裝可能有問題，退出代碼: $($process.ExitCode)"
-        Write-Host "但這可能是正常的，請檢查安裝是否成功" -ForegroundColor Yellow
+    try {
+        # 靜默安裝
+        $installArgs = "/install /quiet /norestart"
+        $process = Start-Process -FilePath $downloadPath -ArgumentList $installArgs -Wait -PassThru
+        
+        if ($process.ExitCode -eq 0) {
+            Write-Host "`n安裝成功完成！" -ForegroundColor Green
+            Write-Host "Visual Studio Remote Tools 已成功安裝" -ForegroundColor Green
+        } elseif ($process.ExitCode -eq 3010) {
+            Write-Host "`n安裝成功完成！" -ForegroundColor Green
+            Write-Host "需要重新啟動電腦才能完全啟用功能" -ForegroundColor Yellow
+        } else {
+            Write-Warning "安裝可能有問題，退出代碼: $($process.ExitCode)"
+            Write-Host "但這可能是正常的，請檢查安裝是否成功" -ForegroundColor Yellow
+        }
     }
-}
-catch {
-    Write-Error "安裝過程中發生錯誤: $($_.Exception.Message)"
-    Read-Host "按Enter鍵結束"
-    exit 1
+    catch {
+        Write-Error "安裝過程中發生錯誤: $($_.Exception.Message)"
+        Read-Host "按Enter鍵結束"
+        exit 1
+    }
+} else {
+    Write-Host "`n跳過安裝步驟，因為Remote Tools已經安裝" -ForegroundColor Green
 }
 
 # 清理下載的檔案
@@ -158,13 +192,26 @@ catch {
 Write-Host "`n=== 安裝完成 ===" -ForegroundColor Green
 Write-Host "Visual Studio Remote Tools 安裝程序已完成！" -ForegroundColor Green
 
-#建立專用User
+# 啟動Wizard
+$wizardPath = Join-Path $installPath "..\rdbgwiz.exe"
+if(Test-Path $wizardPath){
+    Start-Process -FilePath $wizardPath
+}
+
+# 建立專用User
+Write-Host "`n正在建立專用使用者 VSDebugger..." -ForegroundColor Cyan
 net user VSDebugger 0000 /add
+
+# set C:\ as shared folder for VSDebugger
+if((Get-SmbShare -Name "C" -ErrorAction SilentlyContinue) -eq $null) {
+    Write-Host "設定C:\為VSDebugger的共享資料夾..." -ForegroundColor Cyan
+    New-SmbShare -Name "C" -Path "C:\" -FullAccess "VSDebugger"
+}
 
 # 提供額外資訊
 Write-Host "`n額外資訊:" -ForegroundColor Cyan
 Write-Host "- Remote Debugger 通常安裝在: C:\Program Files\Microsoft Visual Studio 17.0\Common7\IDE\Remote Debugger\" -ForegroundColor Gray
 Write-Host "- 您可以在開始功能表中找到 'Remote Debugger' 來啟動服務" -ForegroundColor Gray
-Write-Host "- 預設遠端除錯連接埠為 4024" -ForegroundColor Gray
+Write-Host "- 預設遠端除錯連接埠為 4026" -ForegroundColor Gray
 
 Read-Host "`n按Enter鍵結束"
