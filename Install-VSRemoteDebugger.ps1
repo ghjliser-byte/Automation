@@ -31,7 +31,7 @@ if (-not (Test-Administrator)) {
     
     Start-Process PowerShell -Verb RunAs -ArgumentList $arguments
     exit
-}
+} 
 
 Write-Host "=== Visual Studio Remote Tools 安裝程式 ===" -ForegroundColor Green
 Write-Host "開始執行..." -ForegroundColor Green
