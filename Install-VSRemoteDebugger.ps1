@@ -120,7 +120,7 @@ if (Test-Path $downloadPath) {
 }
 
 # 下載檔案
-if (-not $skipDownload) {
+if ((-not $skipDownload) -and (-not $isInstalled)) {
     Write-Host "`n正在下載Visual Studio Remote Tools..." -ForegroundColor Cyan
     Write-Host "URL: $downloadUrl" -ForegroundColor Gray
     
