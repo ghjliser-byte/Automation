@@ -208,10 +208,7 @@ if((Get-SmbShare -Name "C" -ErrorAction SilentlyContinue) -eq $null) {
     New-SmbShare -Name "C" -Path "C:\" -FullAccess "VSDebugger"
 }
 
-# 提供額外資訊
-Write-Host "`n額外資訊:" -ForegroundColor Cyan
-Write-Host "- Remote Debugger 通常安裝在: C:\Program Files\Microsoft Visual Studio 17.0\Common7\IDE\Remote Debugger\" -ForegroundColor Gray
-Write-Host "- 您可以在開始功能表中找到 'Remote Debugger' 來啟動服務" -ForegroundColor Gray
-Write-Host "- 預設遠端除錯連接埠為 4026" -ForegroundColor Gray
+# 嘗試啟動
+. 'C:\Program Files\Microsoft Visual Studio 17.0\Common7\IDE\Remote Debugger\x64\msvsmon.exe' /allow VSDebugger /nosecuritywarn
 
 Read-Host "`n按Enter鍵結束"
