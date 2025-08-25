@@ -114,13 +114,13 @@ $downloadPath = Join-Path $env:TEMP $fileName
 Write-Host "下載路徑: $downloadPath" -ForegroundColor Cyan
 
 # 檢查檔案是否已存在
-if (Test-Path $downloadPath) {
+if (Test-Path $downloadPath -ErrorAction SilentlyContinue) {
     Write-Host "檔案已存在，跳過下載..." -ForegroundColor Yellow
     $skipDownload = $true
 }
 
 # 下載檔案
-if ((-not $skipDownload) -and (-not $isInstalled)) {
+if ((-not $skipDownload) -and (-not $skipInstallation)) {
     Write-Host "`n正在下載Visual Studio Remote Tools..." -ForegroundColor Cyan
     Write-Host "URL: $downloadUrl" -ForegroundColor Gray
     
