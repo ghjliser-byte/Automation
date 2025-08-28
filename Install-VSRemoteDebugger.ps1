@@ -25,26 +25,6 @@
     執行完整的Remote Tools安裝和設定流程
 #>
 
-# 檢查是否以管理員身份執行
-function Test-Administrator {
-    $currentUser = [Security.Principal.WindowsIdentity]::GetCurrent()
-    $principal = New-Object Security.Principal.WindowsPrincipal($currentUser)
-    return $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
-}
-
-# 如果不是管理員，重新以管理員身份啟動
-if (-not (Test-Administrator)) {
-    Write-Host "需要管理員權限來執行此腳本..." -ForegroundColor Yellow
-    Write-Host "正在重新啟動為管理員模式..." -ForegroundColor Yellow
-    
-    # 重新以管理員身份執行腳本
-    $scriptPath = $MyInvocation.MyCommand.Path
-    $arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$scriptPath`""
-    
-    Start-Process PowerShell -Verb RunAs -ArgumentList $arguments
-    exit
-} 
-
 Write-Host "=== Visual Studio Remote Tools 安裝程式 ===" -ForegroundColor Green
 Write-Host "開始執行..." -ForegroundColor Green
 
@@ -240,8 +220,8 @@ $msvsmonPath = Join-Path $installPath "x64\msvsmon.exe"
 if (Test-Path $msvsmonPath) {
     try {
         Write-Host "啟動Remote Debugger服務..." -ForegroundColor Yellow
-        # 使用背景模式啟動，允許VSDebugger使用者連線且不顯示安全警告
-        Start-Process -FilePath $msvsmonPath -ArgumentList "/allow", "VSDebugger", "/nosecuritywarn" -WindowStyle Minimized
+        # 允許VSDebugger使用者連線且不顯示安全警告
+        Start-Process -FilePath $msvsmonPath -ArgumentList "/allow", "VSDebugger", "/nosecuritywarn"
         Write-Host "Remote Debugger已啟動" -ForegroundColor Green
     }
     catch {
@@ -260,12 +240,6 @@ Write-Host "✓ Remote Debugger 安裝路徑: $installPath" -ForegroundColor Gra
 Write-Host "✓ 除錯使用者: VSDebugger (密碼: 0000)" -ForegroundColor Gray
 Write-Host "✓ 共享資料夾: C:\ (VSDebugger有完整存取權限)" -ForegroundColor Gray
 Write-Host "✓ Remote Debugger服務已啟動" -ForegroundColor Gray
-Write-Host "✓ 預設遠端除錯連接埠: 4024" -ForegroundColor Gray
-
-Write-Host "`n使用說明:" -ForegroundColor Cyan
-Write-Host "1. 在Visual Studio中，選擇 '偵錯' -> '附加至處理序...'" -ForegroundColor Gray
-Write-Host "2. 在'連線目標'中輸入此電腦的IP位址:4024" -ForegroundColor Gray
-Write-Host "3. 使用VSDebugger/0000作為認證資訊" -ForegroundColor Gray
-Write-Host "4. 選擇要偵錯的處理序進行附加" -ForegroundColor Gray
+Write-Host "✓ 預設遠端除錯連接埠: 4026" -ForegroundColor Gray
 
 Read-Host "`n按Enter鍵結束"
